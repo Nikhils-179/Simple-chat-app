@@ -1,0 +1,52 @@
+<html>
+    <head>
+        <title> chat </title>
+        <style>
+            input { display : block}
+            ul {list-style : none}
+        
+        </style>
+    </head>
+    <body>
+
+        <ul id="message"></ul>
+        <form id="chatbox">
+            <textarea></textarea>
+            <input type="submit" value ="send"/>
+        </form>
+
+        <script src="//ajax.googleapis.com/ajax/libs/jquery/1.11.1/jquery.min.js"></script>
+
+            <script>
+                $(function() {
+                    var socket = null;
+                    var msgBox = $("#chatbox textarea");
+                    var messages = $("#message");
+            
+                    $("#chatbox").submit(function() {
+                        if (!msgBox.val()) return false;
+                        if (!socket) {
+                            alert("Error: There is no websocket connection");
+                            return false;
+                        }
+            
+                        socket.send(msgBox.val());
+                        msgBox.val("");
+                        return false;
+                    });
+            
+                    var url = "ws://localhost:8080/room";
+                    socket = new WebSocket(url);
+            
+                    socket.onclose = function() {
+                        alert("Connection has been closed");
+                    };
+            
+                    socket.onmessage = function(e) {
+                        messages.append($("<li>").text(e.data));
+                    };
+                });
+            </script>
+            
+    </body>
+</html>

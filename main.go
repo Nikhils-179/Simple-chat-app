@@ -6,6 +6,7 @@ import (
 	"log"
 	"net/http"
 	"path/filepath"
+	"strings"
 	"sync"
 	"text/template"
 
@@ -109,8 +110,14 @@ func (c *client) read() {
 		if err != nil {
 			return
 		}
-		message := fmt.Sprintf("%s: %s", c.username, string(msg))
-		c.room.forward <- message
+		if string(msg) == `{"action":"getHistory"}` {
+			history := c.room.messageHistory
+			historyMessage := fmt.Sprintf("%s: %s", c.username, "Chat History:\n"+strings.Join(history, "\n"))
+			c.socket.WriteMessage(websocket.TextMessage, []byte(historyMessage))
+		} else {
+			message := fmt.Sprintf("%s: %s", c.username, string(msg))
+			c.room.forward <- message
+		}
 	}
 }
 

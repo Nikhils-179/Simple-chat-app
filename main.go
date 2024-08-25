@@ -10,17 +10,17 @@ import (
 	"sync"
 	"text/template"
 
+	"Nikhils-179/simple-chat-app/db"
+
 	"github.com/gorilla/websocket"
 )
 
-// templateHandler represents a single template
 type templateHandler struct {
 	once     sync.Once
 	filename string
 	templ    *template.Template
 }
 
-// ServeHTTP handles HTTP requests
 func (t *templateHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	t.once.Do(func() {
 		t.templ = template.Must(template.ParseFiles(filepath.Join("templates", t.filename)))
@@ -28,7 +28,6 @@ func (t *templateHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	t.templ.Execute(w, r)
 }
 
-// client represents a single chat client
 type client struct {
 	socket   *websocket.Conn
 	recieve  chan string
@@ -36,7 +35,6 @@ type client struct {
 	username string
 }
 
-// room represents a chat room
 type room struct {
 	clients        map[*client]bool
 	join           chan *client
@@ -45,7 +43,6 @@ type room struct {
 	messageHistory []string
 }
 
-// constructor
 func newRoom() *room {
 	return &room{
 		clients: make(map[*client]bool),
@@ -67,7 +64,11 @@ func (r *room) run() {
 			for client := range r.clients {
 				client.recieve <- msg
 			}
-			r.messageHistory = append(r.messageHistory, msg)
+			// Store message in Redis
+			err := db.StoreMessage("room1", msg)
+			if err != nil {
+				log.Printf("Error storing message: %v", err)
+			}
 		}
 	}
 }
@@ -111,7 +112,12 @@ func (c *client) read() {
 			return
 		}
 		if string(msg) == `{"action":"getHistory"}` {
-			history := c.room.messageHistory
+			// Retrieve chat history from Redis
+			history, err := db.GetChatHistory("room1")
+			if err != nil {
+				log.Printf("Error retrieving chat history: %v", err)
+				continue
+			}
 			historyMessage := fmt.Sprintf("%s: %s", c.username, "Chat History:\n"+strings.Join(history, "\n"))
 			c.socket.WriteMessage(websocket.TextMessage, []byte(historyMessage))
 		} else {
@@ -131,6 +137,8 @@ func (c *client) write() {
 }
 
 func main() {
+	client := db.ConnectToDB()
+	fmt.Println("Connected to Redis:", client)
 	var addr = flag.String("addr", ":8080", "The address of the application")
 	flag.Parse()
 

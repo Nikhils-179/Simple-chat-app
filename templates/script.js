@@ -26,13 +26,14 @@ function startWebSocket(username) {
     };
 
     socket.onmessage = function(e) {
+        console.log(e)
         const data = e.data;
+        console.log(data)
         if (data.includes("Chat History:")) {
-            // Process chat history separately
-            const historyMessages = data.split('\n').slice(1); // Remove "Chat History:" line
+                // Process chat history separately
+                const historyMessages = data.split('\n').slice(1); // Remove "Chat History:" line
                 const formattedHistory = historyMessages.map(message => message.trim()).filter(Boolean);
                 const historyArrayString = `[${formattedHistory.join(' , ')}]`;
-                
                 // Create a new message element for the history
                 const newMessage = $("<div>").addClass("message history").text(historyArrayString);
                 messages.append(newMessage);
@@ -66,7 +67,5 @@ $("#getHistoryButton").on("click", function() {
     }
     socket.send(JSON.stringify({action: "getHistory"}));
 });
-
-
     showWelcomePopup();
 });

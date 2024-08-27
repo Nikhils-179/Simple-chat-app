@@ -4,24 +4,33 @@ import (
 	"context"
 	"fmt"
 	"log"
+	"os"
 
+	"github.com/joho/godotenv"
 	"github.com/redis/go-redis/v9"
 )
 
 var client *redis.Client
+var ctx = context.Background()
+
 
 func createClient() *redis.Client {
-	ctx := context.Background()
+
+	err := godotenv.Load()
+	if err != nil {
+		log.Fatalf("Error loading .env file: %v", err)
+	}else {
+		fmt.Println(".env file loaded successfully")
+	}
+
 
 	client = redis.NewClient(&redis.Options{
-		Addr:     "redis-13538.c282.east-us-mz.azure.redns.redis-cloud.com:13538",
-		Password: "Niku@5632",
+		Addr:     os.Getenv("Redis_Endpoint"),
+		Password: os.Getenv("Redis_Passowrd"),
 		DB:       0,
-		// Optionally configure TLS if needed
-		// TLSConfig: &tls.Config{InsecureSkipVerify: true},
 	})
 
-	_, err := client.Ping(ctx).Result()
+	_, err = client.Ping(ctx).Result()
 	if err != nil {
 		log.Fatalf("Error creating Redis client: %v", err)
 	}
@@ -51,4 +60,16 @@ func GetChatHistory(roomID string) ([]string, error) {
 		return nil, err
 	}
 	return messages, nil
+}
+
+func FlushDatabase() error {
+	client := ConnectToDB()
+
+	err := client.FlushAll(ctx).Err()
+	if err != nil {
+		log.Printf("Error flushing database: %v", err)
+		return err
+	}
+	log.Println("Redis database flushed successfully")
+	return nil
 }

@@ -40,7 +40,6 @@ type room struct {
 	join           chan *client
 	leave          chan *client
 	forward        chan string
-	messageHistory []string
 }
 
 func newRoom() *room {
@@ -137,8 +136,14 @@ func (c *client) write() {
 }
 
 func main() {
+	err := db.FlushDatabase()
+	if err != nil {
+		log.Fatal("Failed to flush Redis database:", err)
+	}
 	client := db.ConnectToDB()
+	
 	fmt.Println("Connected to Redis:", client)
+
 	var addr = flag.String("addr", ":8080", "The address of the application")
 	flag.Parse()
 
@@ -151,7 +156,9 @@ func main() {
 	http.Handle("/", &templateHandler{filename: "chat.html"})
 	// Handle WebSocket connections
 	http.Handle("/room", r)
-
+	
+	// Add load test endpoint
+	http.HandleFunc("/load-test", db.LoadTestHandler)
 	go r.run()
 
 	log.Println("Starting web server on", *addr)

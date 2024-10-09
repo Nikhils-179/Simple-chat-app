@@ -1,26 +1,28 @@
 package db
 
-import "net/http"
+import (
+	"net/http"
 
-func LoadTestHandler(w http.ResponseWriter, r *http.Request) {
+	"github.com/gin-gonic/gin"
+)
+
+func LoadTestHandler(c *gin.Context) {
 	// Simulate chat message storage
-	err := StoreMessage("room1", "Test message")
+	err := StoreCachedMessage(ctx, "room1", "Test message")
 	if err != nil {
-		http.Error(w, "Failed to store message", http.StatusInternalServerError)
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to store message"})
 		return
 	}
 
 	// Simulate chat message retrieval
-	_, err = GetChatHistory("room1")
+	_, err = GetCachedHistory(ctx, "room1")
 	if err != nil {
-		http.Error(w, "Failed to retrieve chat history", http.StatusInternalServerError)
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to retrieve chat history"})
 		return
 	}
 
-	w.WriteHeader(http.StatusOK)
-	w.Write([]byte("Load test successful"))
+	c.JSON(http.StatusOK, gin.H{"message": "Load test successful"})
 }
 
-
-//command 
+//command
 //hey -n 10 -c 10 http://localhost:8080/load-test

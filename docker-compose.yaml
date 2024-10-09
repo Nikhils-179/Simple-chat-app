@@ -1,0 +1,29 @@
+version: '3.9'  # or simply remove this line
+
+services:
+  web:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    ports:
+      - "8080:8080"
+    env_file:
+      - .env  
+    depends_on:
+      - mongo
+      - redis
+
+  mongo:
+    image: mongo
+    ports:
+      - "27017:27017"
+    volumes:
+      - mongo-data:/data/db
+
+  redis:
+    image: redis
+    ports:
+      - "6379:6379"
+
+volumes:
+  mongo-data:
